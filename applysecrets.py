@@ -3,9 +3,9 @@ import yaml
 
 if __name__ == '__main__':
     local = configparser.ConfigParser()
-    local.read('local.ini')
+    local.read('/tmp/local.ini')
 
-    with open('tractdbcouch.yml') as f:
+    with open('/secrets/tractdbcouch.yml') as f:
         tractdbcouch = yaml.load(f)
 
     user = tractdbcouch['admin']['user']
@@ -14,5 +14,5 @@ if __name__ == '__main__':
     local['admins'] = {}
     local['admins'][user] = password
 
-    with open('localwithsecrets.ini', 'w') as f:
+    with open('/etc/couchdb/local.ini', 'w') as f:
         local.write(f)

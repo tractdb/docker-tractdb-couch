@@ -1,6 +1,15 @@
 FROM ubuntu:14.04
 
-# Install the packages we need
+# Install the packages we need for getting things done
+RUN apt-get update && \
+    apt-get install -y \
+      build-essential \
+      dos2unix \
+      git \
+    && \
+    apt-get clean
+
+# Install the packages we need for CouchDB
 RUN apt-get update && \
     apt-get install -y \
       couchdb \
@@ -8,25 +17,31 @@ RUN apt-get update && \
     && \
     apt-get clean
 
-# Install the python we need
+# Install the Python packages we need
 COPY requirements3.txt /tmp/requirements3.txt
 RUN pip3 install -r /tmp/requirements3.txt && \
     rm /tmp/requirements3.txt
 
-# Add our secrets to the local.ini file, put it in place
+## Our local.ini file, which still needs the secret added
 COPY local.ini /tmp/local.ini
-COPY tractdbcouch.yml /tmp/tractdbcouch.yml
-COPY applyadmin.py /tmp/applyadmin.py
-RUN cd tmp && \
-    python3 applyadmin.py && \
-    mv /tmp/localwithsecrets.ini /etc/couchdb/local.ini && \
-    rm /tmp/local.ini /tmp/tractdbcouch.yml /tmp/applyadmin.py
+RUN dos2unix /tmp/local.ini
 
-# Our port
+# We use this script to manipulate our local.ini to add the secret
+COPY applysecrets.py /tmp/applysecrets.py
+
+# Port where CouchDB will listen
 EXPOSE 5984
 
 # Expose our data and logs
 VOLUME ["/var/lib/couchdb", "/var/log/couchdb"]
 
-# Our command
-CMD ["/usr/bin/couchdb"]
+# Volume for secrets
+VOLUME ["/secrets"]
+
+# Our wrapper script
+COPY run.sh /tmp/run.sh
+RUN dos2unix /tmp/run.sh
+RUN chmod a+x /tmp/run.sh
+
+# Run the wrapper script
+CMD ["/tmp/run.sh"]
